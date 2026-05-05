@@ -1,174 +1,140 @@
 # ASC 606 Mod-Diff Visualizer
 
-A controller-facing workpaper view for contract amendments in usage-based SaaS.
+A controller-facing workpaper for ASC 606 contract amendments in usage-based SaaS. Contract-to-cash platforms ship the engine: ingestion, metering, billing, recognition, ERP sync. The gap is the artifact a controller hands to an external auditor at month-end. The diff that ties changed contract language to the 606 treatment, the period revenue movement, the materiality flag, and the supporting source. This demo builds that artifact and constrains the LLM to a single job: narrate one amendment as a controller would, given pre-computed structured facts. Treatment classification, dollar deltas, and materiality are deterministic and authored upstream. The model does not compute, does not classify, does not retrieve. Schema-constrained JSON output, treatment lock-in directive, citation whitelist, and append-only memo history form a four-layer defense against the failure modes that make generic 606 memos unusable in a PBC bundle.
 
-Contract-to-cash platforms already own contract ingestion, usage metering, billing, revenue recognition, and ERP sync. The next controller-grade surface is contract amendment evidence: a diff that shows the contract language, the ASC 606 treatment, the period revenue schedule movement, and the PBC packet a controller can hand to auditors at month-end.
+## Customer Insight: The Workpaper Gap
 
-![Contract overview](docs/screenshots/01-contract-overview.png)
+Controller persona: month-end close at a Series B/C usage-based SaaS company. Snowflake-style contracts (annual commit + usage overage). The commit is fixed consideration; overage is variable consideration subject to constraint. Any mid-term change forces reallocation across both.
 
-## Contract Pattern
+Contract-to-cash platforms (Tabs, Maxio, Zuora, RightRev, NetSuite) own ingestion, metering, billing, recognition, and ERP sync. None ship the amendment workpaper: the diff that proves to an external auditor which 606 path was taken, which periods moved, and why.
 
-Hybrid commit-plus-consumption (Snowflake-style). The customer prepays an annual minimum commitment against a unit price, draws down against the commit through metered usage, and is billed for overage at the same or a tiered rate once the commit is exhausted. This pattern dominates usage-based SaaS (Snowflake, Databricks, Datadog, Twilio, MongoDB Atlas) and is the contract shape that makes ASC 606 amendment accounting hard: the commit is fixed consideration, overage is variable consideration subject to constraint, and any mid-term change has to be allocated across both.
+This demo seeds one Acme Corp contract on the commit-plus-consumption pattern with four Q1 2026 amendments. Each forces a different ASC 606 treatment:
 
-The demo seeds one Acme Corp contract on this pattern with four Q1 2026 amendments: a mid-term price reduction, an added Premium Support SKU, a backdated metering true-up, and a renewal with extension. Each amendment forces a different ASC 606 treatment.
+| Amendment | Treatment | Pattern | Materiality |
+|---|---|---|---|
+| MOD-001: Mid-term price reduction | Modification under 25-13(b) | Prospective | 4.2% (below 5% threshold) |
+| MOD-002: Premium Support SKU | Separate contract under 25-12 | Allocation reshuffle | 2.0% (below threshold) |
+| MOD-003: Backdated metering true-up | Modification under 25-13(a) | Cumulative catch-up | 7.7% (material) |
+| MOD-004: Renewal with extension | Termination + new contract under 25-13(c) | Prospective | ~440% (material) |
 
-## What This Is
+This table is the eval ground truth. Each row specifies what the generated memo must surface.
 
-Single-contract demo for month-end amendment review that sits on top of a computed revenue schedule and makes the controller's judgment legible for other stakeholders including external auditors
+## What The AI Does
 
-- What changed in the contract language.
-- Which ASC 606 modification treatment applies.
-- Which periods moved and by how much.
-- Whether the change creates a cumulative catch-up.
-- Which source clause, invoice line, meter, schedule line, prompt version, model version, and input hash support the result.
-- What goes into the auditor PBC bundle.
+One job: narrate a single amendment as a controller would.
 
-## Why A Contract-To-Cash Company Should Build This
+The LLM does not compute dollars. Deltas are pure functions in [`app/lib/materiality.ts:17-23`](app/lib/materiality.ts).
 
-Controllers buy revenue tooling to reduce month-end audit risk. A mid-term amendment can change transaction price allocation, reopen prior periods, trigger a cumulative catch-up, and force the controller to defend the judgment months later.
+The LLM does not classify treatment. Treatment and `citePrimary` are authored constants in [`app/lib/gold-contract.ts`](app/lib/gold-contract.ts), locked via a directive prepended to every generation call.
 
-A contract-to-cash platform owns the facts: contract clauses, usage meters, invoice lines, revenue schedules, ERP sync state. The missing surface is the workpaper that connects those facts into an audit-ready explanation.
+The LLM does not retrieve citations. `citePrimary` is supplied in the input payload; the system prompt enforces a whitelist: "Do not cite paragraphs that do not appear in the input."
 
-This feature would give controllers three things they care about:
+The LLM produces strict JSON conforming to a `responseSchema`; the UI renders it. No free-text output path exists.
 
-- Defensibility: every visible dollar ties back to the contract clause and supporting source artifact.
-- Speed: the treatment, materiality flag, and schedule delta are visible before the memo.
-- Trust: the memo history is append-only, with model, prompt, timestamp, and input hash attached to every generated version.
+## Grounding Architecture
 
-## App Walkthrough
+Structured-input grounding, not retrieval-augmented generation. The model receives pre-computed facts as typed JSON and narrates them under constraints.
 
-### 1. Start From The Contract Overview
+```mermaid
+flowchart LR
+    A[gold-contract.ts<br/>typed amendments<br/>treatment + citePrimary authored] --> B[materiality.ts<br/>pure-function deltas<br/>tcvDeltaCents, recogDeltaCents]
+    B --> C[gemini.ts payload assembly<br/>memo history stripped<br/>other amendments stripped]
+    C --> D[treatment directive prepended<br/>AUTHORITATIVE TREATMENT: ...<br/>Do not pick a different path]
+    D --> E[Gemini API<br/>responseSchema + JSON mime<br/>temperature 0.2]
+    E --> F[MemoBody JSON<br/>5 required sections<br/>citations array]
+    F --> G[close-memo.tsx render<br/>append-only version history<br/>computedBy metadata]
+```
 
-Route: `/contracts/acme`
+**Context discipline** (`gemini.ts:59-60`): before serialization, memo history and other amendments' invoice lines are stripped from the payload. The LLM sees only the current amendment plus master contract metadata.
 
-The root route redirects here. The overview shows the controller the state of the Acme contract before selecting a specific amendment:
+**Treatment directive** (`gemini.ts:92-107`): `"AUTHORITATIVE TREATMENT: {treatment}. Citation: {citePrimary}. Required phrasing: {phrasing}. Justify this classification from the supplied facts. Do not pick a different ASC 606 path."`
 
-- Initial total contract value: `$300,000`.
-- Consolidated total contract value after all amendments: `$1,703,903`.
-- Recognized year-to-date revenue: `$257,903`.
-- Material amendments: `2 / 4`.
-- A horizontal timeline anchored on the master contract and amendment effective dates.
-- A table of all amendments with treatment, impact pattern, TCV delta, catch-up amount, and materiality.
+**Numerical grounding**: all dollar amounts travel as integer cents through the system. Conversion to dollars happens at the prompt boundary and in the UI. The model never produces a number it cannot trace to an input field.
 
-### 2. Drill Into A Cumulative Catch-Up
+## Failure Mode Taxonomy
 
-Route: `/contracts/acme?mod=3`
+Two dominant failure modes in LLM-generated 606 memos: voice drift (consultant-speak that makes the memo unusable in a PBC bundle) and treatment hallucination (model picks a different 606 path than the input asserts). The system defends against eight specific failures:
 
-MOD-003: backdated metering true-up effective `2026-03-01`. Increases TCV by `$22,500`, moves recognized revenue by `$15,000`, crosses the 5% materiality threshold.
+| Failure | Mitigation | Code Path |
+|---|---|---|
+| Treatment hallucination | Authoritative-treatment directive prepended to user message | `gemini.ts:92-107` |
+| Citation invention | "Do not cite paragraphs that do not appear in the input" + `citePrimary` lock | `close-memo-system.md:42-44` |
+| Voice drift | 12 voice rules in system prompt; voice scored as eval dimension | `close-memo-system.md:15-23` |
+| Dollar drift | Cents as integer input; per-cent conversion rule; hard-fail eval dimension | `close-memo-system.md:25-30` |
+| Entity invention | Explicit prohibition + hard-fail on hallucinated names/IDs | `close-memo-system.md:59`, `evals.md:16` |
+| Format drift | `responseSchema` + `responseMimeType: "application/json"` | `gemini.ts:77-78` |
+| Reasoning leakage | Hard-fail in eval rubric; schema constraint blocks free text | `evals.md:19` |
+| Scope drift | "Scope is exactly one amendment" system prompt rule | `close-memo-system.md:57` |
 
-![Cumulative catch-up amendment](docs/screenshots/02-cumulative-catchup.png)
+## Eval Methodology
 
-The page separates two concepts:
+Offline rubric defined in [`prompts/close-memo-evals.md`](prompts/close-memo-evals.md). Six dimensions scored 0-2:
 
-- Accounting treatment: modification of the existing contract under `ASC 606-10-25-13(a)`.
-- Revenue impact pattern: cumulative catch-up recognized in `2026-03`.
+| Dimension | Must-pass | What "passes" means |
+|---|---|---|
+| Treatment classification | Yes | Names correct 606-10-25 path, cites `citePrimary`, justifies from supplied facts |
+| Dollar precision | Yes | Every dollar matches input cents exactly when converted; no rounding without reason |
+| Period-by-period schedule impact | Yes | Names which periods change, dollar amount per period, cumulative catch-up by month |
+| Materiality assessment | Yes | Absolute and relative stated, compared to 5% threshold, disclosure requirement unambiguous |
+| Citation hygiene | No | Every `[n]` marker resolves in citations array; no invented paragraph numbers |
+| Voice | No | Reads like a controller, not an LLM; no hedging, no first-person, no AI tells |
 
-The left panel shows the clause diff. The right panel shows old versus new period revenue bars. The catch-up appears as its own band beneath the schedule so it does not disappear inside the monthly bars.
+**Ship threshold**: total score at least 9/12 with no zero on any must-pass dimension.
 
-### 3. Compare A Termination Plus New Contract Path
+**Hard-fail conditions** (auto-reject regardless of score):
 
-Route: `/contracts/acme?mod=4`
+- Hallucinated invoice number, working paper ID, counterparty, or ASC paragraph not in input
+- Disagrees with the input's authoritative `treatment` field
+- Greeting, signoff, or addressee line
+- Reasoning visible in output ("Let me think...", "Step 1...")
+- Markdown fences or wrapper around the JSON
 
-MOD-004 covers a renewal and extension effective `2026-03-15`. The remaining 17 days of original-term March are terminated, and a new 12-month renewal term runs through `2027-03-14`.
+**Run protocol**: any change to `prompts/close-memo-system.md` requires re-running all four amendments through the rubric before merge.
 
-![Renewal with extension](docs/screenshots/03-renewal-extension.png)
+**Online eval**: not implemented. Production deployment would log every regeneration with rubric scores. Today the rubric runs by hand against the four seeded amendments.
 
-- Treatment: termination of the existing contract plus creation of a new contract under `ASC 606-10-25-13(c)`.
-- Impact pattern: prospective recognition under the renewal term.
-- Materiality: ~440% of prior TCV.
-- Workpaper need: SSP analysis and term-combination support belong in the PBC packet.
+## Hallucination and Safety Reduction
 
-### 4. Jump Back To The Source Contract
+Four-layer defense in depth:
 
-Route: `/contracts/acme/document`
+**1. Input layer**: deterministic facts only. Numbers and treatment computed/authored upstream in `gold-contract.ts` and `materiality.ts`. The LLM receives structured JSON with cents-as-integers, absolute dates, and pre-resolved treatment classification.
 
-The source contract route renders the seeded agreement with stable clause IDs. Clause diff links jump to these anchors, so the controller can move from a changed field back to the originating language.
+**2. Prompt layer**: treatment directive locks the 606 path. Voice rules prohibit hedging, first-person, AI tells. Citation discipline: "Do not cite paragraphs that do not appear in the input. Do not invent paragraph numbers." Entity prohibition: no invented invoice numbers, working paper IDs, or counterparty names.
 
-![Source contract](docs/screenshots/04-source-contract.png)
+**3. Schema layer**: `responseSchema` (`gemini.ts:14-48`) defines five required string sections plus a citations array with required `marker` and `cite` fields. `responseMimeType: "application/json"` (`gemini.ts:77`) blocks markdown wrappers and free-text preambles.
 
-Source clause stays reachable from any diff link.
+**4. Audit layer**: append-only memo history (`MemoVersion` in `types.ts:56-67`) with `priorVersionId` linking. Per-amendment `computedBy` signature carries `appVersion`, `promptVersion`, `modelVersion`, `computedAt`, and `inputHash` (`types.ts:94-100`). Schedule-line foreign keys (`clauseId`, `meterId`, `invoiceLineId`) enable chain-of-custody tracing in `provenance-trace.tsx:149-228`.
 
-### 5. Open The Provenance Trace
+**Honest disclosures**:
 
-Click a schedule bar or trace marker.
+- `inputHash` in computedBy is populated from seed fixture data, not computed at runtime from the actual generation input
+- `auditTrail` referenced in the PBC bundle footer is a planned export artifact, not an implemented data structure
+- Persistence is `localStorage`; this is a single-session demo, not a production system
 
-![Provenance trace](docs/screenshots/05-provenance-trace.png)
+## Cost, Latency, and Quality Tradeoffs
 
-The drawer explains how a visible number was computed:
+Design rationale, not measured optimization (no production telemetry exists):
 
-- Schedule line ID.
-- Performance obligation.
-- Clause ID and ASC 606 cite.
-- Invoice line or usage meter.
-- App version.
-- Prompt version.
-- Model version.
-- Computed timestamp.
-- Input hash.
+**`gemini-3-flash-preview` over Pro tier**: treatment classification is locked upstream, so the model narrates and justifies rather than reasoning about classification. Flash is sufficient for constrained narration and serves an interactive regenerate flow.
 
-Auditors ask how the answer was produced.
+**Temperature 0.2** (`gemini.ts:79`): ASC 606 memos need consistency across regenerations. Trades phrasing variance for reliability on dollar figures and citation placement.
 
-### 6. Export The PBC Bundle
+**`responseSchema` over free text**: parse-failure cost exceeds schema-token cost. Zero downstream parse failures. Structured rendering guaranteed.
 
-Click `Export PBC zip`.
+**Pre-computed dollars over LLM-derived**: audit defensibility dominates phrasing flexibility. The model never produces a number it cannot trace to an integer-cents input field.
 
-![PBC export](docs/screenshots/06-pbc-export.png)
-
-In `v0.1`, the export button is a no-op with a toast. The intended bundle contents are already reflected in the UI contract:
-
-- Clause diff.
-- Schedule diff.
-- Close memo.
-- Version history.
-- Audit trail.
-- Source artifacts.
-
-For material amendments, the footer marks the bundle as required on the PBC list.
-
-## Gold Contract Scenario
-
-| Mod | Effective date | Scenario | ASC 606 treatment | Revenue pattern | Controller signal |
-|---|---:|---|---|---|---|
-| MOD-001 | 2026-01-15 | Mid-term price reduction | Modification | Prospective | TCV decreases `$12,742`, below threshold |
-| MOD-002 | 2026-02-01 | Add Premium Support SKU | Separate contract | Allocation reshuffle | TCV increases `$6,000`, original schedule unchanged |
-| MOD-003 | 2026-03-01 | Backdated quantity true-up | Modification | Cumulative catch-up | `$15,000` catch-up, material |
-| MOD-004 | 2026-03-15 | Renewal with extension | Termination plus new contract | Prospective | TCV increases `$1,388,145`, material |
-
-## Feature Inventory
-
-| Surface | What it proves |
-|---|---|
-| Contract overview | A controller can scan all amendments without reading every memo. |
-| Contract timeline | Treatment and effective date stay visible across the workflow. |
-| Clause diff | Changed commercial terms are shown before the generated narrative. |
-| Schedule diff | Revenue movement is period-specific and dollar-specific. |
-| Catch-up band | Prior-period impact is not buried inside the chart. |
-| Close memo | The memo states facts, treatment, schedule impact, materiality, and ASC 606 citations. |
-| Version history | Generated and human-edited memo versions remain readable. |
-| Provenance trace | Visible numbers trace back to clause, invoice, meter, and computed-by metadata. |
-| Source contract | Clause anchors keep the workpaper tied to source language. |
-| PBC footer | The workflow ends in auditor evidence, not a dashboard. |
+**No `maxOutputTokens` cap**: a known gap. Model defaults trusted today; production hardening would set a cap to bound cost per generation.
 
 ## Implementation
 
-This repo is a Next.js App Router app with TypeScript and Bun.
-
-Key files:
-
 | Path | Purpose |
 |---|---|
-| `app/page.tsx` | Redirects to the Acme contract workspace. |
-| `app/contracts/[slug]/page.tsx` | Main contract overview and amendment drill-in route. |
-| `app/contracts/[slug]/document/page.tsx` | Source contract route with clause anchors. |
-| `app/lib/gold-contract.ts` | Seeded contract, invoice lines, schedule lines, amendments, and memo versions. |
-| `app/lib/materiality.ts` | TCV delta, recognition delta, and 5% materiality logic. |
-| `app/components/diff-workspace.tsx` | Clause diff, schedule diff, close memo, PBC footer, and provenance drawer composition. |
-| `app/components/close-memo.tsx` | Memo rendering, append-only version selector, and regeneration action. |
-| `app/api/amendments/[id]/memo/route.ts` | Memo regeneration endpoint. |
-| `app/lib/gemini.ts` | Google GenAI integration for memo generation. |
-| `prompts/close-memo-system.md` | Controller-voice memo prompt. |
-
-Memo regeneration requires `GEMINI_API_KEY`. The seeded memo versions render without an API key.
+| `app/lib/gold-contract.ts` | Seeded contract, amendments, schedule lines, and memo versions as typed constants |
+| `app/lib/materiality.ts` | Pure-function TCV delta, recognition delta, and 5% materiality threshold |
+| `app/lib/gemini.ts` | Payload assembly, treatment directive, Gemini API call with responseSchema |
+| `prompts/close-memo-system.md` | System instruction: voice rules, numerical discipline, citation whitelist |
+| `prompts/close-memo-evals.md` | Offline eval rubric: 6 dimensions, hard-fails, per-amendment expected facts |
+| `app/components/close-memo.tsx` | Memo render, version selector, regeneration action, localStorage persistence |
 
 ## Run Locally
 
@@ -177,13 +143,9 @@ bun install
 bun run dev
 ```
 
-Open:
+Open `http://localhost:3000/contracts/acme`.
 
-```text
-http://localhost:3000/contracts/acme
-```
-
-Useful checks:
+Memo regeneration requires `GEMINI_API_KEY` set in `.env.local`. Seeded memo versions render without an API key.
 
 ```bash
 bun run typecheck
@@ -192,14 +154,7 @@ bun run build
 
 ## Out Of Scope
 
-- Multi-tenant auth.
-- Real customer data.
-- ERP push or pull.
-- Contract ingestion.
-- Multi-contract dashboards.
-- GL impact preview.
-- Exception inbox.
-- Signoff workflow.
-- Live PBC zip generation.
-
-Scope: produce audit-ready evidence when an amendment lands.
+- Multi-tenant auth, real customer data, ERP push/pull, contract ingestion
+- Multi-contract dashboards, GL impact preview, exception inbox, signoff workflow
+- Live PBC zip generation, online eval, role-based edit permissions
+- ML amendment classification (treatment is authored, not predicted)
