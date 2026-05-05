@@ -105,7 +105,7 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
             cursor: regenerating ? "wait" : "pointer",
           }}
         >
-          {regenerating ? "Drafting…" : "Regenerate with Gemini"}
+          {regenerating ? "Drafting…" : "Regenerate"}
         </button>
       </header>
 
