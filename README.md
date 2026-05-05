@@ -1,6 +1,6 @@
 # ASC 606 Mod-Diff Visualizer
 
-A controller-facing workpaper for ASC 606 contract amendments in usage-based SaaS. Contract-to-cash platforms ship the engine: ingestion, metering, billing, recognition, ERP sync. The gap is the artifact a controller hands to an external auditor at month-end. The diff that ties changed contract language to the 606 treatment, the period revenue movement, the materiality flag, and the supporting source. This demo builds that artifact and constrains the LLM to a single job: narrate one amendment as a controller would, given pre-computed structured facts. Treatment classification, dollar deltas, and materiality are deterministic and authored upstream. Schema-constrained JSON output, treatment lock-in directive, citation whitelist, and append-only memo history form a four-layer defense against the failure modes that make generic 606 memos unusable in a PBC bundle.
+A controller-facing workpaper for ASC 606 contract amendments in usage-based SaaS. Contract-to-cash platforms ship the engine: ingestion, metering, billing, recognition, ERP sync. The gap is the artifact a controller hands to an external auditor at month-end: a diff tying changed contract language to the 606 treatment, the period revenue movement, the materiality flag, and the supporting source. This demo builds that artifact, with the LLM constrained to one job: narrate one amendment as a controller would, given pre-computed treatment, dollar deltas, and materiality. Schema-constrained JSON output, treatment lock-in directive, citation whitelist, and append-only memo history form a four-layer defense against the failure modes that make generic 606 memos unusable in a PBC bundle.
 
 ## Workpaper Gap
 
@@ -109,7 +109,7 @@ Rationale only; no production telemetry exists:
 
 **`responseSchema` over free text**: schema tokens cost less than parse-failure recovery, and the UI can render typed sections without a tolerant parser.
 
-**Pre-computed dollars over LLM-derived**: every number traces to an integer-cents input field. Audit defensibility requires it.
+**Pre-computed dollars over LLM-derived**: every number traces to an integer-cents input field, removing the variance dimension that breaks audit tie-out.
 
 **No `maxOutputTokens` cap**: known gap. Production should bound cost per generation.
 
