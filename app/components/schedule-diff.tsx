@@ -40,18 +40,9 @@ const PATTERN_FOR_OLD: Record<CategoryKey, string> = {
 };
 
 const PERIOD_LABEL: Record<string, string> = {
-  "2025-01": "JAN",
-  "2025-02": "FEB",
-  "2025-03": "MAR",
-  "2025-04": "APR",
-  "2025-05": "MAY",
-  "2025-06": "JUN",
-  "2025-07": "JUL",
-  "2025-08": "AUG",
-  "2025-09": "SEP",
-  "2025-10": "OCT",
-  "2025-11": "NOV",
-  "2025-12": "DEC",
+  "2026-01": "JAN",
+  "2026-02": "FEB",
+  "2026-03": "MAR",
 };
 
 type PeriodAgg = {
@@ -104,8 +95,8 @@ export function ScheduleDiff({
 
   const catchupBandHeight = amendment.cumulativeCatchupCents > 0 ? 44 : 0;
 
-  // For amd_003, catch-up applies to periods 2025-01 through 2025-08 (8 periods)
-  const catchupPeriodsCount = amendment.pattern === "cumulative-catchup" ? 8 : 0;
+  // For amd_003, catch-up applies to periods 2026-01 through 2026-02 (2 periods)
+  const catchupPeriodsCount = amendment.pattern === "cumulative-catchup" ? 2 : 0;
 
   // Identify which categories appear at all
   const presentCats = new Set<CategoryKey>();
@@ -144,7 +135,7 @@ export function ScheduleDiff({
                 {netDelta > 0 ? "+" : "−"}
                 {money(Math.abs(netDelta)).replace(/^[−+]/, "")}
               </span>{" "}
-              net · {changedPeriods} of 12 periods changed
+              net · {changedPeriods} of {PERIODS.length} periods changed
             </span>
           )}
         </div>
@@ -350,7 +341,7 @@ export function ScheduleDiff({
                       textOverflow: "ellipsis",
                     }}
                   >
-                    Catch-up · recognized 2025-09
+                    Catch-up · recognized 2026-03
                   </span>
                   <span
                     className="mono"
@@ -399,7 +390,7 @@ export function ScheduleDiff({
                     textTransform: "uppercase",
                   }}
                 >
-                  ⤳ chart shows 2025; renewal extends through 2026-10-31
+                  ⤳ chart shows Q1 2026; renewal extends through 2027-03-14
                 </div>
               )}
             </div>

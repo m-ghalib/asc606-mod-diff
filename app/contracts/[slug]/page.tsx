@@ -5,6 +5,7 @@ import { ContractHero } from "@/components/contract-hero";
 import { ContractTimeline } from "@/components/contract-timeline";
 import { DiffWorkspace } from "@/components/diff-workspace";
 import { MasterOverview } from "@/components/master-overview";
+import { MemoResetButton } from "@/components/memo-reset-button";
 import { HelpIcon, SearchIcon } from "@/components/shell/icons";
 
 type SP = { mod?: string };
@@ -43,6 +44,7 @@ export default async function ContractPage({
       breadcrumb={<Breadcrumb trail={trail} />}
       trailing={
         <>
+          {amendment && <MemoResetButton amendmentId={amendment.id} />}
           <button aria-label="Search" style={iconBtn}>
             <SearchIcon />
           </button>

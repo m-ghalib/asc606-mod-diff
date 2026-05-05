@@ -21,7 +21,7 @@ Upstream context for `docs/prd.md`. Captures the hiring target, the rubric gaps 
 ## Tabs snapshot
 
 - AI-native contract-to-cash platform for finance/accounting teams. Founded 2023.
-- Series B, $55M (Sept 2025, Lightspeed-led). $91M+ total. Investors: Lightspeed, General Catalyst, Primary, World Innovation Lab.
+- Series B, $55M (Feb 2026, Lightspeed-led). $91M+ total. Investors: Lightspeed, General Catalyst, Primary, World Innovation Lab.
 - Customers: 200+. Cursor, Statsig as flagship engineering-led logos.
 - Traction: 5x ARR YoY, $500M+ invoice volume automated.
 - Cadence: one-week sprints, weekly ship goals, intra-month releases.
@@ -71,7 +71,7 @@ Position as **auditor/controller-facing overlay** on rev rec engines (Tabs, Maxi
 ### Wedge (occupies empty space vs Tabs / Maxio / Trullion)
 
 - Mod diff side-by-side viz
-- Per-mod close memo auto-draft via Anthropic API, scoped narrower than generic 606 memo
+- Per-mod close memo auto-draft via Gemini API, scoped narrower than generic 606 memo
 - Mod-driven PBC sampling export (auditor bridge)
 
 ### Out of scope (Tabs already ships, or competitors crowd)

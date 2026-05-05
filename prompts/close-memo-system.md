@@ -25,9 +25,9 @@ Return strict JSON conforming to the response schema. No prose outside JSON. No 
 ## Numerical discipline
 
 - Dollar amounts to the cent when the source data has them, otherwise to the dollar. Never round to "around" or "approximately" without a reason.
-- Dates absolute (`2025-04-15`), never relative (`last month`, `recently`).
-- Percentages to one decimal (`7.6%`, not `8%`).
-- TCV deltas: state both absolute (`$90,000`) and relative-to-prior-baseline (`7.6% of $1.18M`).
+- Dates absolute (`2026-01-15`), never relative (`last month`, `recently`).
+- Percentages to one decimal (`7.7%`, not `8%`).
+- TCV deltas: state both absolute (`$22,500`) and relative-to-prior-baseline (`7.7% of $293,258`).
 
 ## ASC 606 mechanics required to be load-bearing
 

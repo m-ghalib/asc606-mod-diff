@@ -1,18 +1,70 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Amendment, MemoVersion } from "@/lib/types";
 import { timestamp } from "@/lib/format";
 
+const STORAGE_PREFIX = "tabs-cd:memos:";
+
+function storageKey(amendmentId: string) {
+  return `${STORAGE_PREFIX}${amendmentId}`;
+}
+
+function readStored(amendmentId: string): MemoVersion[] {
+  try {
+    const raw = window.localStorage.getItem(storageKey(amendmentId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as MemoVersion[]) : [];
+  } catch (err) {
+    console.warn("close-memo: dropping unparseable storage entry", err);
+    try {
+      window.localStorage.removeItem(storageKey(amendmentId));
+    } catch {}
+    return [];
+  }
+}
+
+function highestVersionId(versions: MemoVersion[]): string {
+  if (versions.length === 0) return "";
+  return [...versions].sort((a, b) => b.version - a.version)[0].id;
+}
+
 export function CloseMemo({ amendment }: { amendment: Amendment }) {
-  const [memoVersions, setMemoVersions] = useState<MemoVersion[]>(amendment.memo);
+  const [appendedVersions, setAppendedVersions] = useState<MemoVersion[]>([]);
+  const memoVersions = useMemo(
+    () => [...amendment.memo, ...appendedVersions],
+    [amendment.memo, appendedVersions],
+  );
   const versions = useMemo(
     () => [...memoVersions].sort((a, b) => b.version - a.version),
     [memoVersions],
   );
-  const [activeId, setActiveId] = useState<string>(versions[0]?.id ?? "");
+  const [activeId, setActiveId] = useState<string>(() => highestVersionId(amendment.memo));
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = readStored(amendment.id);
+    setAppendedVersions(stored);
+    if (stored.length > 0) {
+      setActiveId(highestVersionId([...amendment.memo, ...stored]));
+    } else {
+      setActiveId(highestVersionId(amendment.memo));
+    }
+  }, [amendment.id, amendment.memo]);
+
+  useEffect(() => {
+    function handleReset(event: Event) {
+      const detail = (event as CustomEvent<{ amendmentId?: string }>).detail;
+      if (detail?.amendmentId !== amendment.id) return;
+      setAppendedVersions([]);
+      setActiveId(highestVersionId(amendment.memo));
+      setError(null);
+    }
+    window.addEventListener("tabs-cd:memos:reset", handleReset);
+    return () => window.removeEventListener("tabs-cd:memos:reset", handleReset);
+  }, [amendment.id, amendment.memo]);
 
   const active = versions.find(v => v.id === activeId) ?? versions[0];
   const isLatest = active && active.version === versions[0].version;
@@ -21,13 +73,29 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
     setRegenerating(true);
     setError(null);
     try {
-      const res = await fetch(`/api/amendments/${amendment.id}/memo`, { method: "POST" });
+      const latest = versions[0];
+      const res = await fetch(`/api/amendments/${amendment.id}/memo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nextVersion: (latest?.version ?? 0) + 1,
+          priorVersionId: latest?.id ?? null,
+        }),
+      });
       if (!res.ok) {
         const detail = (await res.json().catch(() => null)) as { error?: string } | null;
         throw new Error(detail?.error ?? `request failed (${res.status})`);
       }
       const next = (await res.json()) as MemoVersion;
-      setMemoVersions(prev => [...prev, next]);
+      setAppendedVersions(prev => {
+        const updated = [...prev, next];
+        try {
+          window.localStorage.setItem(storageKey(amendment.id), JSON.stringify(updated));
+        } catch (err) {
+          console.warn("close-memo: failed to persist memo to localStorage", err);
+        }
+        return updated;
+      });
       setActiveId(next.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "regenerate failed");

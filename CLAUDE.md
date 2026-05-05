@@ -24,7 +24,7 @@ README must carry a thesis paragraph forwardable internally at Tabs without cont
 **In scope** (occupies empty space vs Tabs / Maxio / Trullion):
 
 - Mod diff side-by-side viz (the wedge)
-- Per-mod close memo auto-draft via Anthropic API, scoped narrower than generic 606 memo
+- Per-mod close memo auto-draft via Gemini API, scoped narrower than generic 606 memo
 - Mod-driven PBC sampling export (auditor bridge)
 
 **Out of scope** (Tabs already ships, or competitors crowd):
@@ -43,7 +43,7 @@ README must carry a thesis paragraph forwardable internally at Tabs without cont
 
 - **Frontend**: Next.js (App Router)
 - **Database**: SQLite
-- **AI**: Anthropic SDK (`@anthropic-ai/sdk`) for per-mod close memo drafting
+- **AI**: Google GenAI SDK (`@google/genai`) for per-mod close memo drafting
 - **Package manager**: Bun
 - **Hosting**: Vercel
 - **Version Control**: jj colocated with git
@@ -63,9 +63,9 @@ Key 606 concepts load-bearing in this codebase:
 
 ## AI Integration
 
-Anthropic SDK. Close memo prompt takes structured JSON (contract state before, contract state after, mod metadata, computed schedule delta) as input, never raw text. Output reads like a controller wrote it: passive-voice avoided, no AI tells, cites the specific clause + dollar delta. Prompt caching enabled for repeated contract context across mods.
+Google GenAI SDK. Close memo prompt takes structured JSON (contract state before, contract state after, mod metadata, computed schedule delta) as input, never raw text. Output reads like a controller wrote it: passive-voice avoided, no AI tells, cites the specific clause + dollar delta.
 
-Model: default to Claude Sonnet 4.6 for memo drafting unless cost or latency dictates Haiku.
+Model: default to `gemini-3-flash-preview` for memo drafting unless cost, latency, or quality dictates a newer Gemini model.
 
 ## Quality Bar
 

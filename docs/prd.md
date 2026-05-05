@@ -51,7 +51,7 @@ Five steps. Linear. No branching in v0.1.
 1. **Land amendment**: controller picks an amendment from the contract timeline.
 2. **See the diff**: side-by-side old vs new contract terms, dollar deltas highlighted.
 3. **See the schedule impact**: old recognition curve vs new recognition curve, period-by-period delta, cumulative catch-up flagged.
-4. **Read the memo**: Claude-drafted close memo citing ASC 606-10 paragraphs, stating treatment, distinguishing prospective vs cumulative catch-up, materiality flagged.
+4. **Read the memo**: Gemini-drafted close memo citing ASC 606-10 paragraphs, stating treatment, distinguishing prospective vs cumulative catch-up, materiality flagged.
 5. **Bundle PBC**: one-click export of diff + schedules + memo + audit trail to a single PDF/zip for the auditor.
 
 ## 6. Visualization spec
@@ -87,7 +87,7 @@ Storage: SQLite. Seed file ships the Acme Corp gold scenario. The seed file must
 
 ## 8. AI integration
 
-Anthropic SDK. Close memo prompt takes structured JSON (old terms, new terms, computed deltas, ASC 606 treatment, revenue impact pattern, and provenance IDs) and returns a memo in controller voice with paragraph citations. Prompt caching on the contract context block since it repeats across all four amendments. No raw text dumps as input.
+Google GenAI SDK. Close memo prompt takes structured JSON (old terms, new terms, computed deltas, ASC 606 treatment, revenue impact pattern, and provenance IDs) and returns a memo in controller voice with paragraph citations. Structured JSON output is enforced through `responseSchema` in `app/lib/gemini.ts`. No raw text dumps as input.
 
 ## 9. Audit trail
 

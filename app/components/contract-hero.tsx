@@ -34,7 +34,7 @@ function MasterHero() {
             {c.entity}
           </h1>
           <p style={{ margin: "6px 0 0", color: "var(--ink-3)", fontSize: 14 }}>
-            Annual commit + usage overage · {c.effectiveDate} → 2026-10-31 ·{" "}
+            Quarterly commit + usage overage · {c.effectiveDate} → 2027-03-14 ·{" "}
             {c.amendments.length} amendments
           </p>
         </div>
@@ -60,7 +60,7 @@ function MasterHero() {
           value={money(consolidatedTcv)}
           hint={signed(consolidatedTcv - c.initialTcvCents) + " vs initial"}
         />
-        <Kpi label="Recognized YTD" value={money(ytdRecognized)} hint="Through 2025-Q4 close" />
+        <Kpi label="Recognized YTD" value={money(ytdRecognized)} hint="Through 2026-Q1 close" />
         <Kpi
           label="Material amendments"
           value={`${materialCount} / ${c.amendments.length}`}
@@ -139,7 +139,7 @@ function ModHero({ amendment }: { amendment: Amendment }) {
         <Kpi
           label="Cumulative catch-up"
           value={amendment.cumulativeCatchupCents > 0 ? money(amendment.cumulativeCatchupCents) : "—"}
-          hint={amendment.cumulativeCatchupCents > 0 ? "Recognized 2025-09" : "No catch-up"}
+          hint={amendment.cumulativeCatchupCents > 0 ? "Recognized 2026-03" : "No catch-up"}
           tone={amendment.cumulativeCatchupCents > 0 ? "warn" : "neutral"}
         />
         <Kpi

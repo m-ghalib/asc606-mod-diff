@@ -248,7 +248,7 @@ function Toolbar() {
       </label>
       <Chip>
         <CalendarIcon />
-        <span style={{ marginLeft: 6 }}>2025-01 – 2025-12</span>
+        <span style={{ marginLeft: 6 }}>2026-01 – 2026-03</span>
       </Chip>
       <Chip>
         <FilterIcon />

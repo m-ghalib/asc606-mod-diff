@@ -25,10 +25,10 @@ Run a regenerate on each amendment and check:
 
 | Amendment | What the memo MUST get right |
 |---|---|
-| amd_001 (mid-term price reduction) | Treatment = modification under 25-13(b). Prospective. Q1 unchanged. Apr blended rate. TCV delta 3.6% (below threshold). |
+| amd_001 (mid-term price reduction) | Treatment = modification under 25-13(b). Prospective. Jan blended rate. Feb–Mar at $95K. TCV delta 4.2% (below threshold). |
 | amd_002 (Premium Support SKU) | Treatment = separate contract under 25-12. New PO. Original Data Platform schedule unchanged. |
-| amd_003 (backdated true-up) | Treatment = modification under 25-13(a). Cumulative catch-up of $60,000 in 2025-09. Material at 7.6%. |
-| amd_004 (renewal with extension) | Treatment = termination + new contract under 25-13(c). 2-month stub terminated. Renewal term begins 2025-11-01. Material at ~97%. SSP study referenced. |
+| amd_003 (backdated true-up) | Treatment = modification under 25-13(a). Cumulative catch-up of $15,000 in 2026-03. Material at 7.7%. |
+| amd_004 (renewal with extension) | Treatment = termination + new contract under 25-13(c). 17-day stub terminated. Renewal term begins 2026-03-15. Material at ~440%. SSP study referenced. |
 
 ## Why this rubric exists
 

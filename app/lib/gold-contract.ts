@@ -1,9 +1,6 @@
 import type { Amendment, Clause, Contract, InvoiceLine, MemoVersion, Meter, ScheduleLine } from "./types";
 
-const PERIODS_2025 = [
-  "2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06",
-  "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12",
-];
+const PERIODS_Q1_2026 = ["2026-01", "2026-02", "2026-03"];
 
 const meters: Meter[] = [
   { id: "m_query_units", label: "Query units", unit: "units" },
@@ -15,14 +12,14 @@ const masterClauses: Clause[] = [
     id: "cl_term",
     category: "term",
     label: "Initial term",
-    value: "12 months, 2025-01-01 through 2025-12-31",
+    value: "3 months, 2026-01-01 through 2026-03-31",
     cite: "ASC 606-10-25-1",
   },
   {
     id: "cl_tprice",
     category: "transaction-price",
-    label: "Annual commit",
-    value: "$1.20 million (straight-line $100,000 / month)",
+    label: "Quarterly commit",
+    value: "$300,000 (straight-line $100,000 / month)",
     cite: "ASC 606-10-32-2",
   },
   {
@@ -48,11 +45,11 @@ const masterClauses: Clause[] = [
   },
 ];
 
-const masterInvoices: InvoiceLine[] = PERIODS_2025.map((p, i) => ({
+const masterInvoices: InvoiceLine[] = PERIODS_Q1_2026.map((p, i) => ({
   id: `inv_${p}_001`,
   period: p,
   meterId: null,
-  description: `Acme Data Platform commit (period ${i + 1} of 12)`,
+  description: `Acme Data Platform commit (period ${i + 1} of 3)`,
   amountCents: 10_000_000,
 }));
 
@@ -73,56 +70,46 @@ function line(
 
 // ============================================================================
 // AMENDMENT 1 — mid-term price reduction (modification, prospective)
-// effective 2025-04-15. monthly commit drops from $100,000 to $95,000.
-// not material (~3.6% of TCV).
+// effective 2026-01-15. monthly commit drops from $100,000 to $95,000.
+// not material (~4.2% of TCV).
 // ============================================================================
 
 const amd001Lines: ScheduleLine[] = [
-  // jan-mar unchanged
-  line("sch_amd001_2025-01_commit", "2025-01", "commit", 10_000_000, 10_000_000, "cl_tprice", null, "inv_2025-01_001"),
-  line("sch_amd001_2025-02_commit", "2025-02", "commit", 10_000_000, 10_000_000, "cl_tprice", null, "inv_2025-02_001"),
-  line("sch_amd001_2025-03_commit", "2025-03", "commit", 10_000_000, 10_000_000, "cl_tprice", null, "inv_2025-03_001"),
-  // april blended: 14/30 at $100k + 16/30 at $95k = $46,666.67 + $50,666.67 = $97,333
-  line("sch_amd001_2025-04_commit", "2025-04", "commit", 10_000_000, 9_733_333, "cl_tprice", null, "inv_2025-04_001"),
-  // may-dec at $95k
-  line("sch_amd001_2025-05_commit", "2025-05", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-05_001"),
-  line("sch_amd001_2025-06_commit", "2025-06", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-06_001"),
-  line("sch_amd001_2025-07_commit", "2025-07", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-07_001"),
-  line("sch_amd001_2025-08_commit", "2025-08", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-08_001"),
-  line("sch_amd001_2025-09_commit", "2025-09", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-09_001"),
-  line("sch_amd001_2025-10_commit", "2025-10", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-10_001"),
-  line("sch_amd001_2025-11_commit", "2025-11", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-11_001"),
-  line("sch_amd001_2025-12_commit", "2025-12", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2025-12_001"),
+  // jan blended: 14/31 at $100k + 17/31 at $95k = $45,161.29 + $52,096.77 = $97,258.06
+  line("sch_amd001_2026-01_commit", "2026-01", "commit", 10_000_000, 9_725_806, "cl_tprice", null, "inv_2026-01_001"),
+  // feb-mar at $95k
+  line("sch_amd001_2026-02_commit", "2026-02", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2026-02_001"),
+  line("sch_amd001_2026-03_commit", "2026-03", "commit", 10_000_000, 9_500_000, "cl_tprice", null, "inv_2026-03_001"),
 ];
 
 const amd001: Amendment = {
   id: "amd_001",
   number: 1,
-  effectiveDate: "2025-04-15",
+  effectiveDate: "2026-01-15",
   shortTitle: "Mid-term price reduction",
-  description: "Acme requested a goodwill price concession on the Data Platform commit, dropping the monthly rate from $100,000 to $95,000 starting 2025-04-15. The remaining services are distinct from those already transferred, so the modification is treated prospectively per 25-13(b).",
+  description: "Acme requested a goodwill price concession on the Data Platform commit, dropping the monthly rate from $100,000 to $95,000 starting 2026-01-15. The remaining services are distinct from those already transferred, so the modification is treated prospectively per 25-13(b).",
   treatment: "modification",
   pattern: "prospective",
   clauseChanges: [
     {
       clauseId: "cl_tprice",
-      before: "$1.20 million (straight-line $100,000 / month)",
-      after: "$1.16 million (Jan–Mar at $100,000; Apr blended at $97,333; May–Dec at $95,000)",
+      before: "$300,000 (straight-line $100,000 / month)",
+      after: "$287,258 (Jan blended at $97,258; Feb–Mar at $95,000)",
       changedFields: ["transaction-price", "monthly-rate"],
     },
   ],
   scheduleLines: amd001Lines,
   cumulativeCatchupCents: 0,
-  totalContractValueOldCents: 120_000_000,
-  totalContractValueNewCents: 115_733_333,
-  recognizedToDateOldCents: 30_000_000,
-  recognizedToDateNewCents: 30_000_000,
+  totalContractValueOldCents: 30_000_000,
+  totalContractValueNewCents: 28_725_806,
+  recognizedToDateOldCents: 0,
+  recognizedToDateNewCents: 0,
   citePrimary: "ASC 606-10-25-13(b)",
   computedBy: {
     appVersion: "diff@0.1.0",
     promptVersion: "memo-prompt-v3",
     modelVersion: "gemini-3-flash-preview",
-    computedAt: "2025-04-15T09:14:00Z",
+    computedAt: "2026-01-15T09:14:00Z",
     inputHash: "sha256:a4f1c9e2",
   },
   memo: [
@@ -135,16 +122,16 @@ const amd001: Amendment = {
       promptVersion: "memo-prompt-v3",
       inputPayloadHash: "sha256:a4f1c9e2",
       priorVersionId: null,
-      createdAt: "2025-04-15T09:14:00Z",
+      createdAt: "2026-01-15T09:14:00Z",
       body: {
         facts:
-          "Effective 2025-04-15, Acme Corp and the Company executed an amendment reducing the monthly Data Platform commit from $100,000 to $95,000 for the remaining contractual term. Quarter 1 invoices and revenue recognition for January through March 2025 remain unchanged. Total contract value declines from $1.20 million to $1.16 million, a reduction of $42,667 (3.6% of original TCV).",
+          "Effective 2026-01-15, Acme Corp and the Company executed an amendment reducing the monthly Data Platform commit from $100,000 to $95,000 for the remaining contractual term. The amendment was signed mid-January 2026, before any full period had closed. Total contract value declines from $300,000 to $287,258, a reduction of $12,742 (4.2% of original TCV).",
         treatmentDetermination:
-          "The amendment does not add distinct goods or services and does not reflect standalone selling prices, so separate-contract treatment under 25-12 does not apply.[1] The remaining services are distinct from those already transferred to the customer through 2025-04-14, satisfying 25-13(b);[2] accordingly the modification is accounted for as a change in transaction price for the remaining performance obligations on a prospective basis. No revision of revenue recognized in prior periods is required.",
+          "The amendment does not add distinct goods or services and does not reflect standalone selling prices, so separate-contract treatment under 25-12 does not apply.[1] The remaining services are distinct from those already transferred to the customer through 2026-01-14, satisfying 25-13(b);[2] accordingly the modification is accounted for as a change in transaction price for the remaining performance obligations on a prospective basis. No revision of revenue recognized in prior periods is required.",
         revenueScheduleImpact:
-          "Recognition for periods 2025-01 through 2025-03 is unchanged at $100,000 per month. Period 2025-04 reflects a blended rate of $97,333 (14 days at $100,000, 16 days at $95,000). Periods 2025-05 through 2025-12 recognize $95,000 per month.",
+          "Period 2026-01 reflects a blended rate of $97,258 (14 days at $100,000, 17 days at $95,000). Periods 2026-02 and 2026-03 recognize $95,000 per month.",
         materialityAssessment:
-          "The absolute change in TCV of $42,667 represents 3.6% of the original $1.20 million commitment. This falls below the 5% threshold for the materiality flag and does not trigger restatement of any prior period. The change will be disclosed in the next quarterly contract activity summary.",
+          "The absolute change in TCV of $12,742 represents 4.2% of the original $300,000 commitment. This falls below the 5% threshold for the materiality flag and does not trigger restatement of any prior period. The change will be disclosed in the next quarterly contract activity summary.",
         citations: [
           { marker: 1, cite: "ASC 606-10-25-12" },
           { marker: 2, cite: "ASC 606-10-25-13(b)" },
@@ -156,8 +143,8 @@ const amd001: Amendment = {
 
 // ============================================================================
 // AMENDMENT 2 — add new product SKU (separate contract, allocation reshuffle)
-// effective 2025-06-01. Premium Support added at $3,000/mo standalone selling price.
-// not material (~1.8% on consolidated TCV).
+// effective 2026-02-01. Premium Support added at $3,000/mo standalone selling price.
+// not material (~2.1% on consolidated TCV).
 // ============================================================================
 
 const amd002Lines: ScheduleLine[] = [
@@ -168,8 +155,8 @@ const amd002Lines: ScheduleLine[] = [
     oldCents: l.newCents,
     newCents: l.newCents,
   })),
-  // premium support new line: jun-dec at $3,000/mo, old=$0
-  ...["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"].map((p, i) =>
+  // premium support new line: feb-mar at $3,000/mo, old=$0
+  ...["2026-02", "2026-03"].map((p) =>
     line(
       `sch_amd002_${p}_premium`,
       p,
@@ -187,37 +174,37 @@ const amd002Lines: ScheduleLine[] = [
 const amd002: Amendment = {
   id: "amd_002",
   number: 2,
-  effectiveDate: "2025-06-01",
+  effectiveDate: "2026-02-01",
   shortTitle: "Add Premium Support SKU",
-  description: "Acme adds a Premium Support package at $3,000 / month for the remaining seven periods of the term. Pricing reflects standalone selling price; scope adds a distinct PO with no economic interaction with the original Data Platform PO. Treated as a separate contract under 25-12.",
+  description: "Acme adds a Premium Support package at $3,000 / month for the remaining two periods of the term. Pricing reflects standalone selling price; scope adds a distinct PO with no economic interaction with the original Data Platform PO. Treated as a separate contract under 25-12.",
   treatment: "separate-contract",
   pattern: "allocation-reshuffle",
   clauseChanges: [
     {
       clauseId: "cl_po",
       before: "Single PO: Acme Data Platform access",
-      after: "Two POs: Acme Data Platform access; Acme Premium Support (added 2025-06-01)",
+      after: "Two POs: Acme Data Platform access; Acme Premium Support (added 2026-02-01)",
       changedFields: ["performance-obligation", "scope"],
     },
     {
       clauseId: "cl_premium_new",
       before: "(no clause)",
-      after: "Premium Support: $3,000 / month, beginning 2025-06-01, prorated for 7 remaining periods, $21,000 incremental TCV",
+      after: "Premium Support: $3,000 / month, beginning 2026-02-01, prorated for 2 remaining periods, $6,000 incremental TCV",
       changedFields: ["transaction-price", "scope"],
     },
   ],
   scheduleLines: amd002Lines,
   cumulativeCatchupCents: 0,
-  totalContractValueOldCents: 115_733_333,
-  totalContractValueNewCents: 117_833_333,
-  recognizedToDateOldCents: 49_733_333,
-  recognizedToDateNewCents: 49_733_333,
+  totalContractValueOldCents: 28_725_806,
+  totalContractValueNewCents: 29_325_806,
+  recognizedToDateOldCents: 9_725_806,
+  recognizedToDateNewCents: 9_725_806,
   citePrimary: "ASC 606-10-25-12",
   computedBy: {
     appVersion: "diff@0.1.0",
     promptVersion: "memo-prompt-v3",
     modelVersion: "gemini-3-flash-preview",
-    computedAt: "2025-06-01T08:20:00Z",
+    computedAt: "2026-02-01T08:20:00Z",
     inputHash: "sha256:b2c4f071",
   },
   memo: [
@@ -230,16 +217,16 @@ const amd002: Amendment = {
       promptVersion: "memo-prompt-v3",
       inputPayloadHash: "sha256:b2c4f071",
       priorVersionId: null,
-      createdAt: "2025-06-01T08:20:00Z",
+      createdAt: "2026-02-01T08:20:00Z",
       body: {
         facts:
-          "Effective 2025-06-01, Acme added a Premium Support SKU at $3,000 per month for the remaining seven periods of the term, contributing $21,000 of incremental contract value. The Premium Support deliverable is a distinct service independent from the Data Platform access obligation.",
+          "Effective 2026-02-01, Acme added a Premium Support SKU at $3,000 per month for the remaining two periods of the term, contributing $6,000 of incremental contract value. The Premium Support deliverable is a distinct service independent from the Data Platform access obligation.",
         treatmentDetermination:
           "Both criteria of 25-12 are satisfied: the amendment increases scope by adding a distinct service,[1] and the price increase reflects the standalone selling price of $3,000 per month established in the Premium Support price list.[2] The amendment is accounted for as a separate contract; the original Data Platform contract is not modified, no transaction price reallocation across performance obligations is required.",
         revenueScheduleImpact:
-          "The Data Platform recognition schedule is unchanged from the post-amendment-1 baseline. A new schedule of $3,000 per month is added for periods 2025-06 through 2025-12, recognized straight-line over the seven-period span of the Premium Support PO.",
+          "The Data Platform recognition schedule is unchanged from the post-amendment-1 baseline. A new schedule of $3,000 per month is added for periods 2026-02 and 2026-03, recognized straight-line over the two-period span of the Premium Support PO.",
         materialityAssessment:
-          "Consolidated TCV moves from $1.16 million to $1.18 million, a change of $21,000 or 1.8%. The change is below the 5% materiality flag threshold and is non-disruptive to the original Data Platform schedule.",
+          "Consolidated TCV moves from $287,258 to $293,258, a change of $6,000 or 2.1%. The change is below the 5% materiality flag threshold and is non-disruptive to the original Data Platform schedule.",
         citations: [
           { marker: 1, cite: "ASC 606-10-25-12(a)" },
           { marker: 2, cite: "ASC 606-10-25-12(b)" },
@@ -251,17 +238,17 @@ const amd002: Amendment = {
 
 // ============================================================================
 // AMENDMENT 3 — backdated quantity true-up (modification, cumulative catch-up)
-// effective 2025-09-15, retroactive. Meter calibration error revealed +$7,500/mo
-// of overage that should have been recognized in periods 2025-01 through 2025-08.
-// MATERIAL (7.6% of post-amd_002 TCV).
+// effective 2026-03-01, retroactive. Meter calibration error revealed +$7,500/mo
+// of overage that should have been recognized in periods 2026-01 through 2026-02.
+// MATERIAL (7.7% of post-amd_002 TCV).
 // ============================================================================
 
 const amd003BaselineCommit = amd001Lines.map(l => l.newCents);
 const amd003BaselinePremium = (period: string) =>
-  ["2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"].includes(period) ? 300_000 : 0;
+  ["2026-02", "2026-03"].includes(period) ? 300_000 : 0;
 
 const amd003Lines: ScheduleLine[] = [
-  ...PERIODS_2025.flatMap((p, i) => [
+  ...PERIODS_Q1_2026.flatMap((p, i) => [
     line(
       `sch_amd003_${p}_commit`,
       p,
@@ -299,31 +286,31 @@ const amd003Lines: ScheduleLine[] = [
 const amd003: Amendment = {
   id: "amd_003",
   number: 3,
-  effectiveDate: "2025-09-15",
+  effectiveDate: "2026-03-01",
   shortTitle: "Backdated quantity true-up",
-  description: "Meter calibration audit on 2025-09-12 revealed Acme query volume was understated by ~75,000 units / month for 2025-01 through 2025-08. Amendment adjusts the meter and bills the prior overage retroactively at the contractual $0.10 / unit rate. Remaining services are not distinct from those already transferred; modification is accounted for as if part of the existing contract per 25-13(a) with cumulative catch-up.",
+  description: "Meter calibration audit on 2026-02-26 revealed Acme query volume was understated by ~75,000 units / month for 2026-01 through 2026-02. Amendment adjusts the meter and bills the prior overage retroactively at the contractual $0.10 / unit rate. Remaining services are not distinct from those already transferred; modification is accounted for as if part of the existing contract per 25-13(a) with cumulative catch-up.",
   treatment: "modification",
   pattern: "cumulative-catchup",
   clauseChanges: [
     {
       clauseId: "cl_overage",
       before: "$0.10 per query unit above commit-equivalent volume",
-      after: "$0.10 per query unit above commit-equivalent volume; meter restated effective 2025-01-01 per Schedule M-3 calibration report 2025-09-12",
+      after: "$0.10 per query unit above commit-equivalent volume; meter restated effective 2026-01-01 per Schedule M-3 calibration report 2026-02-26",
       changedFields: ["overage", "meter"],
     },
   ],
   scheduleLines: amd003Lines,
-  cumulativeCatchupCents: 6_000_000,
-  totalContractValueOldCents: 117_833_333,
-  totalContractValueNewCents: 126_833_333,
-  recognizedToDateOldCents: 81_233_333,
-  recognizedToDateNewCents: 87_233_333,
+  cumulativeCatchupCents: 1_500_000,
+  totalContractValueOldCents: 29_325_806,
+  totalContractValueNewCents: 31_575_806,
+  recognizedToDateOldCents: 19_525_806,
+  recognizedToDateNewCents: 21_025_806,
   citePrimary: "ASC 606-10-25-13(a)",
   computedBy: {
     appVersion: "diff@0.1.0",
     promptVersion: "memo-prompt-v3",
     modelVersion: "gemini-3-flash-preview",
-    computedAt: "2025-09-15T14:22:00Z",
+    computedAt: "2026-03-01T14:22:00Z",
     inputHash: "sha256:c91d3a5e",
   },
   memo: [
@@ -336,16 +323,16 @@ const amd003: Amendment = {
       promptVersion: "memo-prompt-v3",
       inputPayloadHash: "sha256:c91d3a5e",
       priorVersionId: null,
-      createdAt: "2025-09-15T14:22:00Z",
+      createdAt: "2026-03-01T14:22:00Z",
       body: {
         facts:
-          "Schedule M-3 calibration report dated 2025-09-12 identified a 30% understatement of Acme query units in periods 2025-01 through 2025-08. Restated volume yields $7,500 per period of overage that should have been recognized at the contractual $0.10 / unit rate. The amendment effective 2025-09-15 corrects the meter prospectively and bills the eight-period retroactive amount of $60,000 in cumulative catch-up.",
+          "Schedule M-3 calibration report dated 2026-02-26 identified a 30% understatement of Acme query units in periods 2026-01 through 2026-02. Restated volume yields $7,500 per period of overage that should have been recognized at the contractual $0.10 / unit rate. The amendment effective 2026-03-01 corrects the meter prospectively and bills the two-period retroactive amount of $15,000 in cumulative catch-up.",
         treatmentDetermination:
           "The remaining services are not distinct from those already transferred; the corrected metering applies uniformly across the contract term. The amendment is accounted for as if part of the existing contract per 25-13(a),[1] requiring a cumulative catch-up adjustment to revenue at the modification date for prior periods.",
         revenueScheduleImpact:
-          "A cumulative catch-up of $60,000 is recognized in 2025-09 covering the 2025-01 through 2025-08 understatement. Periods 2025-09 through 2025-12 also recognize $7,500 per period of corrected overage prospectively. Recognized-to-date through 2025-09-30 moves from $812,333 to $872,333.",
+          "A cumulative catch-up of $15,000 is recognized in 2026-03 covering the 2026-01 through 2026-02 understatement. Period 2026-03 also recognizes $7,500 of corrected overage prospectively. Recognized-to-date through 2026-03-31 moves from $293,258 to $315,758.",
         materialityAssessment:
-          "Absolute change in TCV is $90,000, representing 7.6% of the post-amendment-2 TCV of $1.18 million. This exceeds the 5% materiality threshold and triggers the materiality flag. Disclosure required in the 2025-Q3 contract activity memo and on the auditor PBC list. No SEC restatement risk; correction is within the same fiscal year and reflects a billing-side metering error, not a revenue-recognition policy change.",
+          "Absolute change in TCV is $22,500, representing 7.7% of the post-amendment-2 TCV of $293,258. This exceeds the 5% materiality threshold and triggers the materiality flag. Disclosure required in the 2026-Q1 contract activity memo and on the auditor PBC list. No SEC restatement risk; correction is within the same fiscal year and reflects a billing-side metering error, not a revenue-recognition policy change.",
         citations: [{ marker: 1, cite: "ASC 606-10-25-13(a)" }],
       },
     },
@@ -355,16 +342,16 @@ const amd003: Amendment = {
       source: "human-edit",
       authorLabel: "m.abrar (Controller)",
       priorVersionId: "mv_amd003_v1",
-      createdAt: "2025-09-15T16:08:00Z",
+      createdAt: "2026-03-01T16:08:00Z",
       body: {
         facts:
-          "Schedule M-3 calibration report dated 2025-09-12 (issued by the data infrastructure team) identified a 30% understatement of Acme query units in periods 2025-01 through 2025-08. The restated volume yields $7,500 per period of overage that should have been recognized at the contractual $0.10 / unit rate. The amendment effective 2025-09-15 corrects the meter prospectively and bills the eight-period retroactive amount of $60,000 in cumulative catch-up.",
+          "Schedule M-3 calibration report dated 2026-02-26 (issued by the data infrastructure team) identified a 30% understatement of Acme query units in periods 2026-01 through 2026-02. The restated volume yields $7,500 per period of overage that should have been recognized at the contractual $0.10 / unit rate. The amendment effective 2026-03-01 corrects the meter prospectively and bills the two-period retroactive amount of $15,000 in cumulative catch-up.",
         treatmentDetermination:
           "The remaining services are not distinct from those already transferred to the customer; the corrected metering applies uniformly across the entire contract term. The amendment is accounted for as if it were part of the existing contract per 25-13(a),[1] requiring a cumulative catch-up adjustment to revenue at the modification date for prior periods. The billing correction is not a change in estimate under ASC 250 because the underlying contract right was always present; only the meter measurement was understated.",
         revenueScheduleImpact:
-          "A cumulative catch-up of $60,000 is recognized in 2025-09 covering the 2025-01 through 2025-08 understatement. Periods 2025-09 through 2025-12 also recognize $7,500 per period of corrected overage prospectively. Recognized-to-date through 2025-09-30 moves from $812,333 to $872,333.",
+          "A cumulative catch-up of $15,000 is recognized in 2026-03 covering the 2026-01 through 2026-02 understatement. Period 2026-03 also recognizes $7,500 of corrected overage prospectively. Recognized-to-date through 2026-03-31 moves from $293,258 to $315,758.",
         materialityAssessment:
-          "Absolute change in TCV is $90,000, representing 7.6% of the post-amendment-2 TCV of $1.18 million. This exceeds the 5% materiality threshold and triggers the materiality flag. Disclosure is required in the 2025-Q3 contract activity memo and on the auditor PBC list. No SEC restatement risk: the correction is within the same fiscal year and reflects a billing-side metering error, not a revenue-recognition policy change. ITGC review of the meter calibration control is recommended as a follow-up.",
+          "Absolute change in TCV is $22,500, representing 7.7% of the post-amendment-2 TCV of $293,258. This exceeds the 5% materiality threshold and triggers the materiality flag. Disclosure is required in the 2026-Q1 contract activity memo and on the auditor PBC list. No SEC restatement risk: the correction is within the same fiscal year and reflects a billing-side metering error, not a revenue-recognition policy change. ITGC review of the meter calibration control is recommended as a follow-up.",
         citations: [{ marker: 1, cite: "ASC 606-10-25-13(a)" }],
       },
     },
@@ -377,16 +364,16 @@ const amd003: Amendment = {
       promptVersion: "memo-prompt-v3",
       inputPayloadHash: "sha256:c91d3a5e-r1",
       priorVersionId: "mv_amd003_v2",
-      createdAt: "2025-09-16T09:14:00Z",
+      createdAt: "2026-03-02T09:14:00Z",
       body: {
         facts:
-          "Schedule M-3 calibration report dated 2025-09-12 documented a 30% understatement of Acme query units across periods 2025-01 through 2025-08. Restated volume yields $7,500 per period of incremental overage at the contractual $0.10 / unit rate. The amendment effective 2025-09-15 corrects the meter prospectively and recognizes the eight-period retroactive amount of $60,000 as a cumulative catch-up.",
+          "Schedule M-3 calibration report dated 2026-02-26 documented a 30% understatement of Acme query units across periods 2026-01 through 2026-02. Restated volume yields $7,500 per period of incremental overage at the contractual $0.10 / unit rate. The amendment effective 2026-03-01 corrects the meter prospectively and recognizes the two-period retroactive amount of $15,000 as a cumulative catch-up.",
         treatmentDetermination:
           "Remaining services are not distinct from those already transferred; the corrected metering applies uniformly to the contract term. The modification is accounted for as if part of the existing contract per 25-13(a),[1] with cumulative catch-up at the modification date. The billing correction is not a change in estimate under ASC 250 because the contractual right to overage was unchanged: only the meter measurement was understated.",
         revenueScheduleImpact:
-          "A $60,000 cumulative catch-up is recognized in 2025-09. Periods 2025-09 through 2025-12 each recognize an additional $7,500 of corrected overage. Recognized-to-date through 2025-09-30 moves from $812,333 to $872,333; full-period TCV moves from $1.18 million to $1.27 million.",
+          "A $15,000 cumulative catch-up is recognized in 2026-03. Period 2026-03 also recognizes an additional $7,500 of corrected overage. Recognized-to-date through 2026-03-31 moves from $293,258 to $315,758; full-period TCV moves from $293,258 to $315,758.",
         materialityAssessment:
-          "Δ TCV of $90,000 represents 7.6% of the prior baseline of $1.18 million, exceeding the 5% materiality threshold. Disclosure is required in 2025-Q3 contract activity and on the auditor PBC list. ITGC review of the meter calibration control is recommended as a follow-up. No SEC restatement risk; the correction is within the fiscal year and is a metering error, not a revenue policy change.",
+          "Δ TCV of $22,500 represents 7.7% of the prior baseline of $293,258, exceeding the 5% materiality threshold. Disclosure is required in 2026-Q1 contract activity and on the auditor PBC list. ITGC review of the meter calibration control is recommended as a follow-up. No SEC restatement risk; the correction is within the fiscal year and is a metering error, not a revenue policy change.",
         citations: [{ marker: 1, cite: "ASC 606-10-25-13(a)" }],
       },
     },
@@ -395,14 +382,14 @@ const amd003: Amendment = {
 
 // ============================================================================
 // AMENDMENT 4 — renewal with extension (termination + new contract)
-// effective 2025-11-01. Original 2-month stub terminated; new 12-month contract
-// (2025-11-01 → 2026-10-31) at $110k/mo commit + $7,500 overage + $3,000 premium.
-// MATERIAL (97% on consolidated TCV including extension horizon).
+// effective 2026-03-15. Original term terminated 2026-03-14; new 12-month contract
+// (2026-03-15 → 2027-03-14) at $110k/mo commit + $7,500 overage + $3,000 premium.
+// MATERIAL (~440% on consolidated TCV including extension horizon).
 // ============================================================================
 
 const amd004Lines: ScheduleLine[] = [
-  // jan-oct unchanged from amd_003 baseline
-  ...PERIODS_2025.slice(0, 10).flatMap((p, i) => [
+  // jan + feb unchanged from amd_003 baseline
+  ...PERIODS_Q1_2026.slice(0, 2).flatMap((p, i) => [
     line(
       `sch_amd004_${p}_commit`,
       p,
@@ -435,94 +422,87 @@ const amd004Lines: ScheduleLine[] = [
       "Premium Support"
     ),
   ]),
-  // nov + dec: terminated stub replaced with new contract terms
-  ...["2025-11", "2025-12"].map(p =>
-    line(
-      `sch_amd004_${p}_renewal_stub`,
-      p,
-      "renewal-stub",
-      9_500_000,
-      0,
-      "cl_tprice",
-      null,
-      null,
-      "Acme Data Platform (terminated stub)"
-    )
+  // mar 2026: original term terminated 2026-03-14 (14/31 of month at original $95k = $42,903 still recognized);
+  //           renewal runs 2026-03-15 onward (17/31 of march at new $110k = $60,323).
+  line(
+    "sch_amd004_2026-03_renewal_stub",
+    "2026-03",
+    "renewal-stub",
+    9_500_000,
+    4_290_323,
+    "cl_tprice",
+    null,
+    "inv_2026-03_001",
+    "Acme Data Platform (terminated stub)"
   ),
-  ...["2025-11", "2025-12"].map(p =>
-    line(
-      `sch_amd004_${p}_renewal_new`,
-      p,
-      "renewal-new",
-      0,
-      11_000_000,
-      "cl_renewal_new",
-      null,
-      `inv_${p}_renewal`,
-      "Acme Data Platform (renewal term)"
-    )
+  line(
+    "sch_amd004_2026-03_renewal_new",
+    "2026-03",
+    "renewal-new",
+    0,
+    6_032_258,
+    "cl_renewal_new",
+    null,
+    "inv_2026-03_renewal",
+    "Acme Data Platform (renewal term)"
   ),
-  ...["2025-11", "2025-12"].map(p =>
-    line(
-      `sch_amd004_${p}_overage_renewal`,
-      p,
-      "overage",
-      750_000,
-      750_000,
-      "cl_overage",
-      "m_query_units",
-      `inv_${p}_overage`
-    )
+  line(
+    "sch_amd004_2026-03_overage_renewal",
+    "2026-03",
+    "overage",
+    750_000,
+    750_000,
+    "cl_overage",
+    "m_query_units",
+    "inv_2026-03_overage"
   ),
-  ...["2025-11", "2025-12"].map(p =>
-    line(
-      `sch_amd004_${p}_premium_renewal`,
-      p,
-      "premium-support",
-      300_000,
-      300_000,
-      "cl_premium_new",
-      "m_premium_hours",
-      `inv_${p}_002`,
-      "Premium Support"
-    )
+  line(
+    "sch_amd004_2026-03_premium_renewal",
+    "2026-03",
+    "premium-support",
+    300_000,
+    300_000,
+    "cl_premium_new",
+    "m_premium_hours",
+    "inv_2026-03_002",
+    "Premium Support"
   ),
 ];
 
 const amd004: Amendment = {
   id: "amd_004",
   number: 4,
-  effectiveDate: "2025-11-01",
+  effectiveDate: "2026-03-15",
   shortTitle: "Renewal with extension",
-  description: "Acme executes a 12-month renewal effective 2025-11-01 through 2026-10-31. Renewal commit increases to $110,000 per month and consolidates Premium Support and corrected overage into a single new agreement. Remaining 2-month stub of the original contract is terminated; new contract terms apply prospectively. Term-combination test failed: combined consideration is not at standalone selling price, so termination + new contract treatment per 25-13(c) applies.",
+  description: "Acme executes a 12-month renewal effective 2026-03-15 through 2027-03-14. Renewal commit increases to $110,000 per month and consolidates Premium Support and corrected overage into a single new agreement. Remaining 17 days of the original-term March are terminated; new contract terms apply prospectively. Term-combination test failed: combined consideration is not at standalone selling price, so termination + new contract treatment per 25-13(c) applies.",
   treatment: "termination-new-contract",
   pattern: "prospective",
   clauseChanges: [
     {
       clauseId: "cl_term",
-      before: "12 months, 2025-01-01 through 2025-12-31",
-      after: "Original term terminated 2025-10-31; renewal term 2025-11-01 through 2026-10-31 (12 months)",
+      before: "3 months, 2026-01-01 through 2026-03-31",
+      after: "Original term terminated 2026-03-14; renewal term 2026-03-15 through 2027-03-14 (12 months)",
       changedFields: ["term", "end-date"],
     },
     {
       clauseId: "cl_tprice",
-      before: "$1.16 million (Jan–Mar at $100,000; Apr blended at $97,333; May–Dec at $95,000)",
-      after: "Stub Nov-Dec terminated; renewal term commit $110,000 / month × 12 months = $1.32 million + Premium Support $36,000 + estimated overage $90,000",
+      before: "$287,258 (Jan blended at $97,258; Feb–Mar at $95,000)",
+      after: "Stub Mar 15-31 terminated; renewal term commit $110,000 / month × 12 months = $1,320,000 + Premium Support $36,000 + estimated overage $90,000",
       changedFields: ["transaction-price", "monthly-rate"],
     },
   ],
   scheduleLines: amd004Lines,
   cumulativeCatchupCents: 0,
-  totalContractValueOldCents: 126_833_333,
-  totalContractValueNewCents: 250_333_333,
-  recognizedToDateOldCents: 109_233_333,
-  recognizedToDateNewCents: 109_233_333,
+  totalContractValueOldCents: 31_575_806,
+  totalContractValueNewCents: 170_390_300,
+  recognizedToDateOldCents: 25_790_300,
+  recognizedToDateNewCents: 25_790_300,
   citePrimary: "ASC 606-10-25-13(c)",
   computedBy: {
     appVersion: "diff@0.1.0",
     promptVersion: "memo-prompt-v3",
     modelVersion: "gemini-3-flash-preview",
-    computedAt: "2025-11-01T11:02:00Z",
+    computedAt: "2026-03-15T11:02:00Z",
     inputHash: "sha256:d83b720c",
   },
   memo: [
@@ -535,16 +515,16 @@ const amd004: Amendment = {
       promptVersion: "memo-prompt-v3",
       inputPayloadHash: "sha256:d83b720c",
       priorVersionId: null,
-      createdAt: "2025-11-01T11:02:00Z",
+      createdAt: "2026-03-15T11:02:00Z",
       body: {
         facts:
-          "On 2025-11-01 Acme and the Company executed a renewal agreement covering 2025-11-01 through 2026-10-31. The renewal increases the monthly commit to $110,000 and consolidates Premium Support and corrected overage into a single agreement. The remaining 2-month stub of the original contract is superseded.",
+          "On 2026-03-15 Acme and the Company executed a renewal agreement covering 2026-03-15 through 2027-03-14. The renewal increases the monthly commit to $110,000 and consolidates Premium Support and corrected overage into a single agreement. The remaining 17 days of the original-term March are superseded.",
         treatmentDetermination:
-          "The remaining services under the original contract are not distinct from those provided under the renewal, and the renewal price does not reflect the standalone selling price of the remaining services (per the SSP analysis dated 2025-10-28). The criteria of 25-12 are not met. Under 25-13(c),[1] the modification is accounted for as a termination of the existing contract and creation of a new contract; remaining unrecognized consideration from the original contract is combined with the new consideration and recognized prospectively over the new term.",
+          "The remaining services under the original contract are not distinct from those provided under the renewal, and the renewal price does not reflect the standalone selling price of the remaining services (per the SSP analysis dated 2026-03-10). The criteria of 25-12 are not met. Under 25-13(c),[1] the modification is accounted for as a termination of the existing contract and creation of a new contract; remaining unrecognized consideration from the original contract is combined with the new consideration and recognized prospectively over the new term.",
         revenueScheduleImpact:
-          "Periods 2025-01 through 2025-10 are unchanged from the post-amendment-3 baseline. The 2-month stub for periods 2025-11 and 2025-12 ($95,000 commit per period) is terminated. New contract recognition begins 2025-11-01 at $110,000 commit + $7,500 overage + $3,000 Premium Support per period for the 12-month renewal term.",
+          "Periods 2026-01 and 2026-02 are unchanged from the post-amendment-3 baseline. The 17-day stub of original-term March (2026-03-15 through 2026-03-31, $52,097 commit at $95,000 monthly equivalent) is terminated. New contract recognition begins 2026-03-15 at $110,000 commit + $7,500 overage + $3,000 Premium Support per period for the 12-month renewal term ending 2027-03-14.",
         materialityAssessment:
-          "Δ consolidated TCV is approximately $1.24 million, representing 97.4% of the prior baseline of $1.27 million, well above the 5% materiality threshold. Disclosure is required in the 2025-Q4 contract activity memo and on the auditor PBC list. Renewal pricing analysis (SSP study 2025-10-28) and term-combination test working paper are required attachments.",
+          "Δ consolidated TCV is approximately $1.39 million, representing 440% of the prior baseline of $315,758, well above the 5% materiality threshold. Disclosure is required in the 2026-Q1 contract activity memo and on the auditor PBC list. Renewal pricing analysis (SSP study 2026-03-10) and term-combination test working paper are required attachments.",
         citations: [{ marker: 1, cite: "ASC 606-10-25-13(c)" }],
       },
     },
@@ -554,16 +534,16 @@ const amd004: Amendment = {
       source: "human-edit",
       authorLabel: "m.abrar (Controller)",
       priorVersionId: "mv_amd004_v1",
-      createdAt: "2025-11-01T15:40:00Z",
+      createdAt: "2026-03-15T15:40:00Z",
       body: {
         facts:
-          "On 2025-11-01 Acme and the Company executed a renewal agreement covering the period 2025-11-01 through 2026-10-31. The renewal increases the monthly commit to $110,000 and consolidates Premium Support and corrected overage into a single new agreement. The remaining 2-month stub of the original contract (periods 2025-11 and 2025-12) is superseded by the renewal terms.",
+          "On 2026-03-15 Acme and the Company executed a renewal agreement covering the period 2026-03-15 through 2027-03-14. The renewal increases the monthly commit to $110,000 and consolidates Premium Support and corrected overage into a single new agreement. The remaining 17 days of the original-term March (2026-03-15 through 2026-03-31) are superseded by the renewal terms.",
         treatmentDetermination:
-          "Per the SSP analysis dated 2025-10-28, the renewal price does not reflect standalone selling price of the remaining services; the remaining services are not distinct from those provided under the renewal. The criteria of 25-12 are not met. Under 25-13(c),[1] the modification is accounted for as a termination of the existing contract and the creation of a new contract; remaining unrecognized consideration from the original contract is combined with the new consideration and recognized prospectively over the new contract term.",
+          "Per the SSP analysis dated 2026-03-10, the renewal price does not reflect standalone selling price of the remaining services; the remaining services are not distinct from those provided under the renewal. The criteria of 25-12 are not met. Under 25-13(c),[1] the modification is accounted for as a termination of the existing contract and the creation of a new contract; remaining unrecognized consideration from the original contract is combined with the new consideration and recognized prospectively over the new contract term.",
         revenueScheduleImpact:
-          "Periods 2025-01 through 2025-10 are unchanged from the post-amendment-3 baseline. The 2-month stub of the original contract for periods 2025-11 and 2025-12 ($95,000 commit per period) is terminated. New contract recognition begins 2025-11-01 at $110,000 commit + $7,500 estimated overage + $3,000 Premium Support per period across the 12-month renewal term, ending 2026-10-31.",
+          "Periods 2026-01 and 2026-02 are unchanged from the post-amendment-3 baseline. The 17-day stub of original-term March ($52,097 commit at the $95,000 monthly-equivalent rate) is terminated. New contract recognition begins 2026-03-15 at $110,000 commit + $7,500 estimated overage + $3,000 Premium Support per period across the 12-month renewal term, ending 2027-03-14.",
         materialityAssessment:
-          "Δ consolidated TCV is approximately $1.24 million, representing 97.4% of the prior $1.27 million baseline; well above the 5% materiality threshold. Disclosure is required in the 2025-Q4 contract activity memo and on the auditor PBC list. The SSP study (2025-10-28) and term-combination test working paper are required attachments. Renewal commission accrual schedule is amended in parallel under the related ASC 340-40 work; cross-reference workpaper RR-04 in this PBC bundle.",
+          "Δ consolidated TCV is approximately $1.39 million, representing 440% of the prior $315,758 baseline; well above the 5% materiality threshold. Disclosure is required in the 2026-Q1 contract activity memo and on the auditor PBC list. The SSP study (2026-03-10) and term-combination test working paper are required attachments. Renewal commission accrual schedule is amended in parallel under the related ASC 340-40 work; cross-reference workpaper RR-04 in this PBC bundle.",
         citations: [{ marker: 1, cite: "ASC 606-10-25-13(c)" }],
       },
     },
@@ -579,19 +559,19 @@ export const acmeContract: Contract = {
   slug: "acme",
   entity: "Acme Corp, Inc.",
   entityShort: "ACME",
-  effectiveDate: "2025-01-01",
-  termEnds: "2025-12-31",
-  termMonths: 12,
+  effectiveDate: "2026-01-01",
+  termEnds: "2026-03-31",
+  termMonths: 3,
   type: "master",
-  description: "Annual data-platform commit with usage-based overage. Series-B SaaS reference scenario per PRD §4.",
-  initialTcvCents: 120_000_000,
+  description: "Quarterly data-platform commit with usage-based overage. Series-B SaaS reference scenario per PRD §4.",
+  initialTcvCents: 30_000_000,
   clauses: masterClauses,
   meters,
   invoiceLines: masterInvoices,
   amendments: [amd001, amd002, amd003, amd004],
 };
 
-export const PERIODS = PERIODS_2025;
+export const PERIODS = PERIODS_Q1_2026;
 
 export function findAmendment(modParam: string | undefined): Amendment | null {
   if (!modParam) return null;

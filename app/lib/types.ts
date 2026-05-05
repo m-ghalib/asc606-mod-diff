@@ -25,7 +25,7 @@ export type Meter = {
 };
 
 export type InvoiceLine = {
-  id: string; // 'inv_2025_03_001'
+  id: string; // 'inv_2026_03_001'
   period: Period;
   meterId: string | null;
   description: string;
@@ -33,7 +33,7 @@ export type InvoiceLine = {
 };
 
 export type ScheduleLine = {
-  id: string; // 'sch_2025_03_commit'
+  id: string; // 'sch_2026_03_commit'
   period: Period;
   performanceObligation: string;
   category: "commit" | "overage" | "premium-support" | "renewal-stub" | "renewal-new";
@@ -83,7 +83,7 @@ export type Amendment = {
   treatment: Treatment;
   pattern: Pattern;
   clauseChanges: ClauseDiff[];
-  scheduleLines: ScheduleLine[]; // 12 periods × stacked categories
+  scheduleLines: ScheduleLine[]; // 3 periods × stacked categories
   cumulativeCatchupCents: number;
   totalContractValueOldCents: number;
   totalContractValueNewCents: number;

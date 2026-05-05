@@ -6,7 +6,7 @@ import type { MemoVersion } from "@/lib/types";
 export const runtime = "nodejs";
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
@@ -14,6 +14,10 @@ export async function POST(
   if (!amendment) {
     return NextResponse.json({ error: "amendment not found" }, { status: 404 });
   }
+
+  const hint = (await req.json().catch(() => null)) as
+    | { nextVersion?: unknown; priorVersionId?: unknown }
+    | null;
 
   let body;
   try {
@@ -23,11 +27,20 @@ export async function POST(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  const latestVersion = amendment.memo.reduce((m, v) => Math.max(m, v.version), 0);
-  const nextVersion = latestVersion + 1;
-  const priorVersionId = amendment.memo
+  const seedLatest = amendment.memo
     .slice()
-    .sort((a, b) => b.version - a.version)[0]?.id ?? null;
+    .sort((a, b) => b.version - a.version)[0];
+  const hintedVersion =
+    typeof hint?.nextVersion === "number" &&
+    Number.isInteger(hint.nextVersion) &&
+    hint.nextVersion > 0
+      ? hint.nextVersion
+      : null;
+  const nextVersion = hintedVersion ?? (seedLatest?.version ?? 0) + 1;
+  const priorVersionId =
+    typeof hint?.priorVersionId === "string" || hint?.priorVersionId === null
+      ? (hint.priorVersionId as string | null)
+      : seedLatest?.id ?? null;
 
   const memoVersion: MemoVersion = {
     id: `mv_${amendment.id}_v${nextVersion}_${Date.now().toString(36)}`,

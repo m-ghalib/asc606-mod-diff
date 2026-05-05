@@ -34,7 +34,7 @@ export function ContractTimeline({ selected }: { selected: number | null }) {
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
           <span className="heading-2">Contract timeline</span>
-          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>2025 calendar</span>
+          <span style={{ fontSize: 12, color: "var(--ink-3)" }}>Q1 2026 calendar</span>
         </div>
         <Link
           href="/contracts/acme"

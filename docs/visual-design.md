@@ -37,7 +37,7 @@ Reference set lives outside the repo: tabs.com demo screenshots showing AR Autom
 
 - Hero swaps to mod context: small caption with mod number, effective date, ASC cite; display title is the amendment short title; chips row carries treatment, pattern, and a material pill if tripped.
 - Mod KPIs reuse the same card style: Δ TCV, Δ Recognized, Cumulative catch-up, Materiality %.
-- Diff workspace is two cards in a 1 / 1.15 grid: Clause diff (header, then per-clause rows with paired before / after blocks) and Schedule diff (legend, axis, 12 monthly bar pairs old vs new, optional cumulative-catch-up band underneath).
+- Diff workspace is two cards in a 1 / 1.15 grid: Clause diff (header, then per-clause rows with paired before / after blocks) and Schedule diff (legend, axis, 3 monthly bar pairs old vs new, optional cumulative-catch-up band underneath).
 - Close memo is one card with two columns: memo body sections (Facts / Treatment determination / Revenue schedule impact / Materiality assessment / Authoritative citations) and a right-rail Version history with selectable v1…vN entries.
 - PBC footer: fixed strip offset by sidebar, soft elevation, charcoal "Export PBC zip" primary button.
 
