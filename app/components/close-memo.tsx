@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { Amendment, MemoVersion } from "@/lib/types";
+import type { Amendment, MemoBody, MemoVersion } from "@/lib/types";
 import { timestamp } from "@/lib/format";
 
 const STORAGE_PREFIX = "tabs-cd:memos:";
@@ -43,6 +43,8 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
   const [activeId, setActiveId] = useState<string>(() => highestVersionId(amendment.memo));
   const [regenerating, setRegenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<MemoBody | null>(null);
 
   useEffect(() => {
     const stored = readStored(amendment.id);
@@ -61,6 +63,8 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
       setAppendedVersions([]);
       setActiveId(highestVersionId(amendment.memo));
       setError(null);
+      setEditing(false);
+      setDraft(null);
     }
     window.addEventListener("tabs-cd:memos:reset", handleReset);
     return () => window.removeEventListener("tabs-cd:memos:reset", handleReset);
@@ -102,6 +106,44 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
     } finally {
       setRegenerating(false);
     }
+  }
+
+  function handleStartEdit() {
+    if (!active) return;
+    setDraft({ ...active.body, citations: active.body.citations });
+    setEditing(true);
+    setError(null);
+  }
+
+  function handleCancelEdit() {
+    setDraft(null);
+    setEditing(false);
+  }
+
+  function handleSaveEdit() {
+    if (!draft) return;
+    const latest = versions[0];
+    const next: MemoVersion = {
+      id: `mv_${amendment.id}_v${(latest?.version ?? 0) + 1}_manual`,
+      version: (latest?.version ?? 0) + 1,
+      source: "human-edit",
+      authorLabel: "Manual review",
+      priorVersionId: latest?.id ?? null,
+      createdAt: new Date().toISOString(),
+      body: draft,
+    };
+    setAppendedVersions(prev => {
+      const updated = [...prev, next];
+      try {
+        window.localStorage.setItem(storageKey(amendment.id), JSON.stringify(updated));
+      } catch (err) {
+        console.warn("close-memo: failed to persist manual edit to localStorage", err);
+      }
+      return updated;
+    });
+    setActiveId(next.id);
+    setDraft(null);
+    setEditing(false);
   }
 
   if (!active) return null;
@@ -158,23 +200,79 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
           </span>
         )}
         <span style={{ flex: 1 }} />
-        <button
-          type="button"
-          onClick={handleRegenerate}
-          disabled={regenerating}
-          style={{
-            fontSize: 12,
-            fontWeight: 500,
-            padding: "6px 12px",
-            borderRadius: 8,
-            border: "1px solid var(--border)",
-            background: regenerating ? "var(--surface-2)" : "var(--surface-raised)",
-            color: regenerating ? "var(--ink-3)" : "var(--ink)",
-            cursor: regenerating ? "wait" : "pointer",
-          }}
-        >
-          {regenerating ? "Drafting…" : "Regenerate"}
-        </button>
+        {editing ? (
+          <>
+            <button
+              type="button"
+              onClick={handleCancelEdit}
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--surface-raised)",
+                color: "var(--ink)",
+                cursor: "pointer",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--treat-modify)",
+                background: "var(--treat-modify-bg)",
+                color: "var(--treat-modify)",
+                cursor: "pointer",
+              }}
+            >
+              Save manual review
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              disabled={regenerating}
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: "var(--surface-raised)",
+                color: regenerating ? "var(--ink-3)" : "var(--ink)",
+                cursor: regenerating ? "not-allowed" : "pointer",
+              }}
+            >
+              Edit manually
+            </button>
+            <button
+              type="button"
+              onClick={handleRegenerate}
+              disabled={regenerating}
+              style={{
+                fontSize: 12,
+                fontWeight: 500,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid var(--border)",
+                background: regenerating ? "var(--surface-2)" : "var(--surface-raised)",
+                color: regenerating ? "var(--ink-3)" : "var(--ink)",
+                cursor: regenerating ? "wait" : "pointer",
+              }}
+            >
+              {regenerating ? "Drafting…" : "Regenerate"}
+            </button>
+          </>
+        )}
       </header>
 
       <div
@@ -185,10 +283,37 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
         }}
       >
         <div style={{ padding: "20px 24px", minWidth: 0 }}>
-          <MemoSection title="Facts">{active.body.facts}</MemoSection>
-          <MemoSection title="Treatment determination">{active.body.treatmentDetermination}</MemoSection>
-          <MemoSection title="Revenue schedule impact">{active.body.revenueScheduleImpact}</MemoSection>
-          <MemoSection title="Materiality assessment">{active.body.materialityAssessment}</MemoSection>
+          {editing && draft ? (
+            <>
+              <MemoEditor
+                title="Facts"
+                value={draft.facts}
+                onChange={v => setDraft(d => (d ? { ...d, facts: v } : d))}
+              />
+              <MemoEditor
+                title="Treatment determination"
+                value={draft.treatmentDetermination}
+                onChange={v => setDraft(d => (d ? { ...d, treatmentDetermination: v } : d))}
+              />
+              <MemoEditor
+                title="Revenue schedule impact"
+                value={draft.revenueScheduleImpact}
+                onChange={v => setDraft(d => (d ? { ...d, revenueScheduleImpact: v } : d))}
+              />
+              <MemoEditor
+                title="Materiality assessment"
+                value={draft.materialityAssessment}
+                onChange={v => setDraft(d => (d ? { ...d, materialityAssessment: v } : d))}
+              />
+            </>
+          ) : (
+            <>
+              <MemoSection title="Facts">{active.body.facts}</MemoSection>
+              <MemoSection title="Treatment determination">{active.body.treatmentDetermination}</MemoSection>
+              <MemoSection title="Revenue schedule impact">{active.body.revenueScheduleImpact}</MemoSection>
+              <MemoSection title="Materiality assessment">{active.body.materialityAssessment}</MemoSection>
+            </>
+          )}
 
           {active.body.citations.length > 0 && (
             <div
@@ -310,7 +435,7 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
                           fontWeight: 600,
                         }}
                       >
-                        {v.source === "human-edit" ? "Human edit" : "Generated"}
+                        {v.source === "human-edit" ? "Manual review" : "Generated"}
                       </span>
                       <span
                         className="mono"
@@ -336,7 +461,7 @@ export function CloseMemo({ amendment }: { amendment: Amendment }) {
               lineHeight: 1.55,
             }}
           >
-            Append-only history. Every regenerate or human edit creates a new timestamped version
+            Append-only history. Every regenerate or manual review creates a new timestamped version
             with prior-version pointer.
           </p>
         </aside>
@@ -370,6 +495,52 @@ function MemoSection({ title, children }: { title: string; children: React.React
       >
         {renderMemoBody(children)}
       </p>
+    </div>
+  );
+}
+
+function MemoEditor({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  return (
+    <div style={{ marginTop: 18 }}>
+      <h3
+        style={{
+          margin: "0 0 6px 0",
+          fontSize: 14,
+          fontWeight: 600,
+          color: "var(--ink)",
+          letterSpacing: "-0.005em",
+        }}
+      >
+        {title}
+      </h3>
+      <textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        spellCheck
+        style={{
+          width: "100%",
+          minHeight: 120,
+          fontFamily: "inherit",
+          fontSize: 14,
+          lineHeight: 1.6,
+          color: "var(--ink)",
+          background: "var(--surface-raised)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          padding: "10px 12px",
+          resize: "vertical",
+          boxSizing: "border-box",
+          maxWidth: "62ch",
+        }}
+      />
     </div>
   );
 }
